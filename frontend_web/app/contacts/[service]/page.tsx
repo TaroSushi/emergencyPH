@@ -37,7 +37,7 @@ const NearestServicesPage = () => {
       try {
         sessionStorage.removeItem(`services-${type}`);
         let userLocation = JSON.parse(localStorage.getItem('userLocation') || 'null');
-
+  
         if (!userLocation) {
           userLocation = await new Promise((resolve, reject) => {
             navigator.geolocation.getCurrentPosition(
@@ -50,58 +50,72 @@ const NearestServicesPage = () => {
             );
           });
         }
-
+  
         const sessionKey = `services-${type}-${userLocation.brgy || userLocation.city || userLocation.region || 'default'}`;
         sessionStorage.removeItem(sessionKey);
-
-        let query = supabase.from("contacts").select('*').eq('type', type);
-
+  
+        let servicesList: Service[] = [];
+  
         if (type === 'Politician') {
-            const barangayQuery = supabase
-              .from("contacts")
-              .select('*')
-              .eq('type', type).eq("category", "Barangay")
-              .ilike('barangay', `%${userLocation.brgy}%`)
-              .ilike('city', `%${userLocation.city}%`);
-          
-            const cityQuery = supabase
-              .from("contacts")
-              .select('*')
-              .eq('type', type).eq("category", "City Government")
-              .ilike('city', `%${userLocation.city}%`);
-          
-            const [{ data: barangayData, error: barangayError }, { data: cityData, error: cityError }] = await Promise.all([
-              barangayQuery,
-              cityQuery
-            ]);
-          
-            if (barangayError) throw barangayError;
-            if (cityError) throw cityError;
-          
-            const combinedData = [...new Map([...barangayData, ...cityData].map(item => [item.id, item])).values()];
-          
-            // ✅ Make `query` a valid Supabase query
-            query = supabase
-              .from('contacts')
-              .select('*')
-              .in('id', combinedData.map(item => item.id));
+          // 🔹 Fetch Barangay Data First
+          const { data: barangayData, error: barangayError } = await supabase
+            .from("contacts")
+            .select('*')
+            .eq('type', type)
+            .eq("category", "Barangay")
+            .ilike('barangay', `%${userLocation.brgy}%`)
+            .ilike('city', `%${userLocation.city}%`);
+  
+          if (barangayError) throw barangayError;
+  
+          if (barangayData) {
+            servicesList.push(...barangayData);
+            setServices([...servicesList]); // ✅ Update state with barangay data
           }
-          
 
-        setLocationDisplay([userLocation.brgy, userLocation.city, userLocation.region]);
+          console.log(barangayData)
+  
+          // 🔹 Fetch City Data Next
+          const { data: cityData, error: cityError } = await supabase
+            .from("contacts")
+            .select('*')
+            .eq('type', type)
+            .eq("category", "City Government")
+            .ilike('city', `%${userLocation.city}%`);
+  
+          if (cityError) throw cityError;
+  
+          if (cityData) {
+            servicesList.push(...cityData);
+            setServices([...servicesList]); // ✅ Update state with city data
+          }
 
-
-
-        const { data, error } = await query;
-        if (error) throw error;
-
-        const sorted = data.map(service => ({
+          console.log(cityData)
+        } else {
+          // 🔹 Fetch General Services if Not Politician
+          const { data, error } = await supabase.from("contacts").select('*').eq('type', type);
+          if (error) throw error;
+          servicesList = data;
+          setServices([...servicesList]);
+        }
+        
+        console.log(servicesList)
+        setLocationDisplay([userLocation.brgy, userLocation.city, userLocation.region].filter(Boolean));
+  
+        // 🔹 Sort by Distance
+        const sorted = servicesList.map(service => ({
           ...service,
-          distance: getDistanceKm(userLocation.latitude, userLocation.longitude, service.lat, service.lon)
+          distance: getDistanceKm(
+            userLocation.latitude, 
+            userLocation.longitude, 
+            service.lat ?? 0, 
+            service.lon ?? 0
+          )
         })).sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
-
+  
         sessionStorage.setItem(sessionKey, JSON.stringify(sorted));
-        setServices(sorted); 
+        setServices([...sorted]); 
+        
       } catch (err) {
         setError(typeof err === 'string' ? err : 'Error fetching services.');
         console.error(err);
@@ -109,9 +123,11 @@ const NearestServicesPage = () => {
         setLoading(false);
       }
     };
-
+  
     fetchServices();
   }, [type]);
+  
+  
 
   const toggleShowMore = (category: string) => {
     setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }));
@@ -125,7 +141,7 @@ const NearestServicesPage = () => {
       case 'Politician': return <Scale />;
       default: return <User />;
     }
-  };
+  }; 
 
   if (loading) return <p className="max-w-3xl mx-auto p-4">Loading services...</p>;
   if (error) return <p className="max-w-3xl mx-auto p-4 text-red-500">{error}</p>;
