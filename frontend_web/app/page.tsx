@@ -87,6 +87,7 @@ const Index = () => {
   ];
 
   return (
+    /*
     <div className="space-y-8 animate-fade-up">
       <section className="text-center space-y-4">
         <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 whitespace-nowrap">
@@ -121,6 +122,8 @@ const Index = () => {
         </div>
       </Card>
     </div>
+    */
+    <h2 className="text-lg sm:text-base font-semibold">Under Maintenance</h2>
   );
 };
 
