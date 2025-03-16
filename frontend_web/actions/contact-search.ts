@@ -6,13 +6,13 @@ export async function handleSubmit(formData: FormData) {
   const supabase = await createClient()
 
   const name = formData.get('name') as string
+  const type = formData.get('type') as string
   const region = formData.get('region') as string
   const category = formData.get('category') as string
   const classification = formData.get('classification') as string
-  const type = formData.get('type') as string
 
   try {
-    const { data, error } = await supabase.rpc('search_contacts', {
+    const { data, error } = await supabase.rpc('search_contacts_updated', {
       p_type: type,
       p_name: name,
       p_region: region,

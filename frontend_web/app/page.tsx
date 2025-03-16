@@ -1,99 +1,125 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { MapPin, Phone, Plus, Search } from 'lucide-react';
+import { MapPin, Shield, Hospital, Flame, Scale } from 'lucide-react';
 import Link from "next/link";
 
+interface UserLocation {
+  city: string;
+  country: string;
+  region: string;
+  brgy: string;
+  longitude: number;
+  latitude: number;
+}
+
 const Index = () => {
-  const [location, setLocation] = useState({
+  const [location, setLocation] = useState<UserLocation>({
     city: "Fetching...",
     country: "",
     region: "",
+    brgy: "",
     longitude: 0,
     latitude: 0,
   });
 
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          try {
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-            );
-            const data = await response.json();
-            console.log(data)
-            setLocation({
-              city: data.address.city || data.address.town || "Unknown",
-              country: data.address.country || "Unknown",
-              region: data.address.region || "Unknown",
-              longitude,
-              latitude,
-            });
-          } catch (error) {
-            console.error("Error fetching location:", error);
-          }
-        },
-        () => {
-          setLocation({ city: "Location unavailable", country: "", region: "", longitude: 0, latitude: 0 });
-        }
+  const fetchUserLocation = async (latitude: number, longitude: number) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
       );
+      const data = await response.json();
+      
+      const userLocation: UserLocation = {
+        city: data.address.city || data.address.town || "Unknown",
+        country: data.address.country || "Unknown",
+        region: data.address.region || "Unknown",
+        brgy: data.address?.quarter || data.address?.neighbourhood || "Unknown",
+        longitude,
+        latitude,
+      };
+
+      setLocation(userLocation);
+      localStorage.setItem('userLocation', JSON.stringify(userLocation));
+    } catch (error) {
+      console.error("Error fetching location:", error);
     }
+  };
+
+  useEffect(() => {
+    const updateLocation = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            fetchUserLocation(position.coords.latitude, position.coords.longitude);
+          },
+          () => {
+            const fallbackLocation = {
+              city: "Location unavailable",
+              country: "",
+              region: "",
+              brgy: "",
+              longitude: 0,
+              latitude: 0
+            };
+            setLocation(fallbackLocation);
+            localStorage.setItem('userLocation', JSON.stringify(fallbackLocation));
+          }
+        );
+      }
+    };
+
+    // Fetch location immediately when the component mounts
+    updateLocation();
+
+    // Set up an interval to update location every 2 minutes
+    const interval = setInterval(updateLocation, 120000);
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(interval);
   }, []);
 
   const services = [
-    { text: "Police", link: "/contacts/Police" },
-    { text: "Ambulance", link: "/contacts/Medical" },
-    { text: "Firetruck", link: "/contacts/Firehouse" },
-    { text: "Politicians", link: "/contacts/Politician" },
+    { text: "Police", link: "/contacts/Police", icon: <Shield className="h-10 w-10 text-blue-500" /> },
+    { text: "Ambulance", link: "/contacts/Medical", icon: <Hospital className="h-10 w-10 text-red-500" /> },
+    { text: "Firetruck", link: "/contacts/Firehouse", icon: <Flame className="h-10 w-10 text-orange-500" /> },
+    { text: "Government", link: "/contacts/Politician", icon: <Scale className="h-10 w-10 text-green-500" /> },
   ];
 
   return (
     <div className="space-y-8 animate-fade-up">
-      {/* Header Section */}
       <section className="text-center space-y-4">
-        <h1 className="text-4xl font-bold text-gray-900">Emergency Services</h1>
-        <p className="text-gray-600 max-w-2xl mx-auto px-4 sm:px-0">
-          Quick access to your emergency contacts and services. Stay prepared and connected.
-        </p>
+        <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 whitespace-nowrap">
+          Emergency Services
+        </h1>
       </section>
 
-      {/* Emergency Services Grid */}
-      <div className="flex justify-center w-full px-4">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 w-full max-w-4xl">
-          {services.map((service) => (
-            <Link href={service.link} key={service.link}>
-              <Card className="aspect-square hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="flex justify-center items-center flex-col h-full space-x-4">
-                  <div className="p-3 bg-emergency/10 rounded-full">
-                    <Phone className="h-10 w-10 text-blue-500 text-emergency" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold">{service.text}</h2>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-          ))}
-        </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto">
+        {services.map(service => (
+          <Link href={service.link} key={service.link}>
+            <Card className="aspect-square hover:shadow-lg cursor-pointer p-3 sm:p-2">
+              <div className="flex flex-col justify-center items-center h-full">
+                {service.icon}
+                <h2 className="text-lg sm:text-base font-semibold">{service.text}</h2>
+              </div>
+            </Card>
+          </Link>
+        ))}
       </div>
 
-      {/* Current Location Card */}
-      <div className="px-4">
-        <Card className="p-4 bg-gray-50">
-          <div className="flex items-center gap-3">
-            <MapPin className="h-5 w-5 text-gray-500" />
-            <div>
-              <p className="text-sm font-medium">Current Location</p>
-              <p className="text-xs text-gray-600">{location.country}</p>
-              <p className="text-xs text-gray-600">{location.city}</p>
-              <p className="text-xs text-gray-600">{location.region}</p>
-              <p className="text-xs text-gray-600">Lng: {location.longitude} | Lat: {location.latitude}</p>
-            </div>
+      <Card className="p-4 bg-gray-50 max-w-3xl mx-auto">
+        <div className="flex items-center gap-3">
+          <MapPin className="h-5 w-5 text-gray-500" />
+          <div>
+            <p className="text-sm font-medium">
+              {location.brgy}, {location.city}, {location.region}
+            </p>
+            <p className="text-xs text-gray-600">
+              Lat: {location.latitude}, Lng: {location.longitude}
+            </p>
           </div>
-        </Card>
-      </div>
+        </div>
+      </Card>
     </div>
   );
 };

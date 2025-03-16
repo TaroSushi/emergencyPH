@@ -1,120 +1,276 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { supabase } from '@/utils/supabase/client';
 import { Card } from "@/components/ui/card";
-import { Phone, Hospital, Shield, Flame, Scale, User } from "lucide-react";
+import { Phone, Hospital, Shield, Flame, Scale, User, Flag, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { supabase } from '@/utils/supabase/client';
+import { handleReport, Service } from "@/utils/supabase/function";
 
 const getDistanceKm = (lat1, lon1, lat2, lon2) => {
-    const toRadians = (deg) => deg * (Math.PI / 180);
-    const R = 6371;
-    const dLat = toRadians(lat2 - lat1);
-    const dLon = toRadians(lon2 - lon1);
-    const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return (R * c).toFixed(1);
+  const toRadians = (deg) => deg * (Math.PI / 180);
+  const R = 6371;
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return (R * c).toFixed(1);
 };
 
 const NearestServicesPage = () => {
-    const { service } = useParams();
-    const type = decodeURIComponent(service);
+  const { service } = useParams();
+  const type = typeof service === 'string' ? decodeURIComponent(service) : '';
+  const [locationDisplay, setLocationDisplay] = useState<string | null>(null);
 
-    const [services, setServices] = useState([]);
-    const [userLocation, setUserLocation] = useState(null);
-    const [error, setError] = useState(null);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
-    useEffect(() => {
-        navigator.geolocation.getCurrentPosition(
-            pos => {
-                setUserLocation({
-                    lat: pos.coords.latitude,
-                    lon: pos.coords.longitude
-                });
-            },
-            () => setError("Unable to retrieve your location.")
-        );
-    }, []);
+  useEffect(() => {
+    const fetchServices = async () => {
+      setLoading(true);
+      try {
+        sessionStorage.removeItem(`services-${type}`);
+        let userLocation = JSON.parse(localStorage.getItem('userLocation') || 'null');
 
-    useEffect(() => {
-        const fetchServices = async () => {
-            if (!userLocation || !type) return;
-
-            try {
-                const { data, error } = await supabase
-                    .from("contacts") // confirm this is your correct table name
-                    .select('*')
-                    .eq('type', type);
-
-                if (error) throw error;
-
-                const sortedData = data
-                    .map(service => ({
-                        ...service,
-                        distance: getDistanceKm(userLocation.lat, userLocation.lon, service.lat, service.lon)
-                    }))
-                    .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
-
-                setServices(sortedData);
-            } catch (err) {
-                setError("Error fetching services data.");
-                console.error(err);
-            }
-        };
-
-        fetchServices();
-    }, [userLocation, type]); // <-- Only run this effect when userLocation or type changes.
-
-    const getIcon = (type) => {
-        switch (type) {
-            case 'Medical': return <Hospital className="text-emergency" />;
-            case 'Police': return <Shield className="text-emergency" />;
-            case 'Firehouse': return <Flame className="text-emergency" />;
-            case 'Politician': return <Scale className="text-emergency" />;
-            default: return <User className="text-emergency" />;
+        if (!userLocation) {
+          userLocation = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+              pos => {
+                const loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+                localStorage.setItem('userLocation', JSON.stringify(loc));
+                resolve(loc);
+              },
+              () => reject('Unable to get your location.')
+            );
+          });
         }
+
+        const sessionKey = `services-${type}-${userLocation.brgy || userLocation.city || userLocation.region || 'default'}`;
+        sessionStorage.removeItem(sessionKey);
+
+        let query = supabase.from("contacts").select('*').eq('type', type);
+
+        if (type === 'Politician') {
+          const barangayQuery = supabase
+            .from("contacts")
+            .select('*')
+            .eq('type', type).eq("category", "Barangay")
+            .ilike('barangay', `%${userLocation.brgy}%`)
+            .ilike('city', `%${userLocation.city}%`);
+        
+          const cityQuery = supabase
+            .from("contacts")
+            .select('*')
+            .eq('type', type).eq("category", "City Government")
+            .ilike('city', `%${userLocation.city}%`);
+
+          const [{ data: barangayData, error: barangayError }, { data: cityData, error: cityError }] = await Promise.all([
+            barangayQuery,
+            cityQuery
+          ]);
+
+          if (barangayError) throw barangayError;
+          if (cityError) throw cityError;
+
+          const combinedData = [...new Map([...barangayData, ...cityData].map(item => [item.id, item])).values()];
+          query = { data: combinedData };
+        }
+
+        setLocationDisplay([userLocation.brgy, userLocation.city, userLocation.region]);
+
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        const sorted = data.map(service => ({
+          ...service,
+          distance: getDistanceKm(userLocation.latitude, userLocation.longitude, service.lat, service.lon)
+        })).sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+
+        sessionStorage.setItem(sessionKey, JSON.stringify(sorted));
+        setServices(sorted); 
+      } catch (err) {
+        setError(typeof err === 'string' ? err : 'Error fetching services.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    if (error) {
-        return <div className="max-w-3xl mx-auto p-4 text-red-500">{error}</div>;
+    fetchServices();
+  }, [type]);
+
+  const toggleShowMore = (category: string) => {
+    setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }));
+  };
+
+  const getIcon = (type) => {
+    switch (type) {
+      case 'Medical': return <Hospital />;
+      case 'Police': return <Shield />;
+      case 'Firehouse': return <Flame />;
+      case 'Politician': return <Scale />;
+      default: return <User />;
     }
+  };
 
-    return (
-        <div className="max-w-3xl mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-4">Nearest {type} Services</h1>
+  if (loading) return <p className="max-w-3xl mx-auto p-4">Loading services...</p>;
+  if (error) return <p className="max-w-3xl mx-auto p-4 text-red-500">{error}</p>;
 
-            {services.length === 0 && <p>Loading or no services found...</p>}
+  const renderPoliticianCard = (service: Service, faded = false) => (
+    <Card key={service.id} className={`p-4 mb-4 relative flex flex-col overflow-hidden transition-opacity duration-300 ${faded ? "relative after:content-[''] after:absolute after:top-0 after:left-0 after:w-full after:h-1/2 after:bg-gradient-to-b after:from-white after:to-transparent" : ""}`} style={{ height: faded ? '50%' : 'auto', clipPath: faded ? 'inset(0 0 50% 0)' : 'none' }}>
+      <Button
+        variant="ghost"
+        className="absolute top-2 right-2 p-1 text-red-500 hover:text-red-700"
+        onClick={() => handleReport(service)}
+      >
+        <Flag className="w-5 h-5" />
+      </Button>
 
-            {services.map(service => (
-                <Card key={service.id} className="p-4 mb-4">
-                    <div className="flex gap-4">
-                        <div className="p-3 bg-emergency/10 rounded-full">
-                            {getIcon(service.type)}
-                        </div>
-                        <div>   
-                            <h2 className="text-lg font-semibold">{service.name || 'No name'}</h2>
-                            <p className="text-gray-500">
-                                {service.category || 'No category'} • {service.classification || 'No classification'}
-                            </p>
-                            <p className="text-gray-500">
-                                {service.location || 'No region'} • {service.distance} km away
-                            </p>
-                            <p className="mt-1">{service.description || 'No description'}</p>
-                            <Button variant="outline" asChild className="mt-2">
-                                <a href={`tel:${service.contact_no.replace(/\D/g, '')}`}> 
-                                    <Phone className="w-4 h-4 mr-2" />
-                                    {service.contact_no}
-                                </a>
-                            </Button>
-                        </div>
-                    </div>
-                </Card>
-            ))}
+      <div className="flex gap-4 items-center">
+        <div className="p-3 bg-emergency/10 rounded-full">
+          {getIcon(service.type)}
         </div>
+        <div className="flex-1">
+          <h2 className="text-lg font-semibold pr-8">{service.name}</h2>
+          <p className="text-gray-500">{service.classification || 'No classification'}</p>
+        </div>
+      </div>
+
+      {service.contact_no && (
+        <Button 
+          variant="outline"
+          asChild
+          className="w-full mt-2"
+        >
+          <a href={`tel:${service.contact_no.replace(/\D/g, '')}`} className="flex items-center justify-center">
+            <Phone className="w-5 h-5 mr-2" />
+            {service.contact_no}
+          </a>
+        </Button>
+      )}
+    </Card>
+  );
+
+
+  const renderServiceCard = (service: Service) => (
+    <Card key={service.id} className="p-4 mb-4 relative flex flex-col">
+      {/* 🔹 Report Button - Positioned on top-right, does not overlap name */}
+      <Button
+        variant="ghost"
+        className="absolute top-2 right-2 p-1 text-red-500 hover:text-red-700"
+        onClick={() => handleReport(service)}
+      >
+        <Flag className="w-5 h-5" />
+      </Button>
+
+      <div className="flex gap-4 items-center">
+        <div className="p-3 bg-emergency/10 rounded-full">
+          {getIcon(service.type)}
+        </div>
+        <div className="flex-1">
+          {/* 🔹 Ensures the name does not overlap with the flag */}
+          <h2 className="text-lg font-semibold pr-8">{service.name}</h2>
+          <p className="text-gray-500">{service.classification || 'No classification'}</p>
+          <p className="text-gray-500">
+            {service.category || 'No category'}
+            {service.type !== 'Politician' && ` • ${service.distance} km away`}
+          </p>
+        </div>
+      </div>
+
+      {/* 🔹 Contact Number - Spans the Entire Width of the Card */}
+      {service.contact_no && (
+        <Button 
+          variant="outline"
+          asChild
+          className="w-full mt-2"
+        >
+          <a href={`tel:${service.contact_no.replace(/\D/g, '')}`} className="flex items-center justify-center">
+            <Phone className="w-5 h-5 mr-2" />
+            {service.contact_no}
+          </a>
+        </Button>
+      )}
+    </Card>
+  );
+
+
+  if (type === 'Politician') {
+    return (
+      <>
+        {services.length === 0 && <p>No services found nearby.</p>}
+
+        
+        {["Barangay", "City Government", "Regional Government"].map((category, index) => {
+          const filteredServices = services.filter((service) => service.category === category);
+          if (filteredServices.length === 0) return null;
+
+          const highestRanking = filteredServices[0];
+          const otherOfficials = filteredServices.slice(1);
+
+          const expanded = expandedCategories[category];
+
+          return (
+            <div key={category} className="mb-6">
+              <h2 className="text-xl font-semibold mb-2">{locationDisplay[index]}</h2>
+
+              {highestRanking && renderPoliticianCard(highestRanking)}
+
+              {otherOfficials.length > 0 && (
+                <div className="relative">
+                  <div className="relative">
+                    {renderPoliticianCard(otherOfficials[0], !expandedCategories[category])}
+                    {!expandedCategories[category] && (
+                    <>
+                      <Button
+                        variant="outline"
+                        className="w-full text-center absolute bottom-0 transform -translate-y-4"
+                        onClick={() => toggleShowMore(category)}
+                    >
+                        {expanded ? 'Show Less' : `Show More (${filteredServices.length - 1})`}
+                    </Button>
+                    </>
+                  )}
+                    
+                  </div>
+
+                  {expandedCategories[category] && (
+                    <>
+                      {otherOfficials.slice(1).map(service => renderPoliticianCard(service))}
+                      <Button
+                        variant="outline"
+                        className="w-full text-center mt-6"
+                        onClick={() => toggleShowMore(category)}
+                      >
+                        Show Less
+                      </Button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </>
     );
+  }
+
+
+
+  return (
+    <div className="max-w-3xl mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Nearest {type} Services</h1>
+      {services.length === 0 && <p>No services found nearby.</p>}
+      {services.slice(0,8).map(renderServiceCard)}
+    </div>
+  );
+
 };
 
 export default NearestServicesPage;
