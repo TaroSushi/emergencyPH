@@ -23,7 +23,8 @@ const getDistanceKm = (lat1, lon1, lat2, lon2) => {
 const NearestServicesPage = () => {
   const { service } = useParams();
   const type = typeof service === 'string' ? decodeURIComponent(service) : '';
-  const [locationDisplay, setLocationDisplay] = useState<string | null>(null);
+  const [locationDisplay, setLocationDisplay] = useState<string[]>([]);
+
 
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,32 +57,39 @@ const NearestServicesPage = () => {
         let query = supabase.from("contacts").select('*').eq('type', type);
 
         if (type === 'Politician') {
-          const barangayQuery = supabase
-            .from("contacts")
-            .select('*')
-            .eq('type', type).eq("category", "Barangay")
-            .ilike('barangay', `%${userLocation.brgy}%`)
-            .ilike('city', `%${userLocation.city}%`);
-        
-          const cityQuery = supabase
-            .from("contacts")
-            .select('*')
-            .eq('type', type).eq("category", "City Government")
-            .ilike('city', `%${userLocation.city}%`);
-
-          const [{ data: barangayData, error: barangayError }, { data: cityData, error: cityError }] = await Promise.all([
-            barangayQuery,
-            cityQuery
-          ]);
-
-          if (barangayError) throw barangayError;
-          if (cityError) throw cityError;
-
-          const combinedData = [...new Map([...barangayData, ...cityData].map(item => [item.id, item])).values()];
-          query = { data: combinedData };
-        }
+            const barangayQuery = supabase
+              .from("contacts")
+              .select('*')
+              .eq('type', type).eq("category", "Barangay")
+              .ilike('barangay', `%${userLocation.brgy}%`)
+              .ilike('city', `%${userLocation.city}%`);
+          
+            const cityQuery = supabase
+              .from("contacts")
+              .select('*')
+              .eq('type', type).eq("category", "City Government")
+              .ilike('city', `%${userLocation.city}%`);
+          
+            const [{ data: barangayData, error: barangayError }, { data: cityData, error: cityError }] = await Promise.all([
+              barangayQuery,
+              cityQuery
+            ]);
+          
+            if (barangayError) throw barangayError;
+            if (cityError) throw cityError;
+          
+            const combinedData = [...new Map([...barangayData, ...cityData].map(item => [item.id, item])).values()];
+          
+            // ✅ Make `query` a valid Supabase query
+            query = supabase
+              .from('contacts')
+              .select('*')
+              .in('id', combinedData.map(item => item.id));
+          }
+          
 
         setLocationDisplay([userLocation.brgy, userLocation.city, userLocation.region]);
+
 
 
         const { data, error } = await query;
