@@ -19,7 +19,7 @@ const getDistanceKm = (lat1, lon1, lat2, lon2) => {
     Math.sin(dLat / 2) ** 2 +
     Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return (R * c).toFixed(1);
+  return (R * c).toFixed(1); // Distance in km
 };
 
 const NearestServicesPage = () => {
