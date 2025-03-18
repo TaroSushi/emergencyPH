@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { Home, User, Phone } from 'lucide-react';
+import { Toaster } from "@/components/ui/sonner";
 
 
 const geistSans = Geist({
@@ -59,6 +60,7 @@ export default function RootLayout({
           </main>
           <div></div>
       </div>
+      <Toaster />
       </body>
       </html>
   );

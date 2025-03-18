@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Phone, Hospital, Shield, Flame, Scale, User, Flag, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { supabase } from '@/utils/supabase/client';
 import { handleReport, Service } from "@/utils/supabase/function";
 import {ReportModal} from "@/components/custom/report_button";
@@ -147,16 +148,30 @@ const NearestServicesPage = () => {
   if (loading) return <p className="max-w-3xl mx-auto p-4">Loading services...</p>;
   if (error) return <p className="max-w-3xl mx-auto p-4 text-red-500">{error}</p>;
 
+  const handleReportSubmission = async (serviceId: number) => {
+    try {
+      console.log("Pressed Submit Report")
+      const { data, error } = await supabase
+        .rpc('insert_reported', {
+          p_service_id: serviceId,
+        });
+
+      if (error) throw error;
+
+      toast.success('Report submitted successfully');
+      return true;
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      toast.error('Failed to submit report. Please try again.');
+      return false;
+    }
+  };
+
   const renderPoliticianCard = (service: Service, faded = false) => (
     <Card key={service.id} className={`p-4 mb-4 relative flex flex-col overflow-hidden transition-opacity duration-300 ${faded ? "relative after:content-[''] after:absolute after:top-0 after:left-0 after:w-full after:h-1/2 after:bg-gradient-to-b after:from-white after:to-transparent" : ""}`} style={{ height: faded ? '50%' : 'auto', clipPath: faded ? 'inset(0 0 50% 0)' : 'none' }}>
-      {/*<Button*/}
-      {/*  variant="ghost"*/}
-      {/*  className="absolute top-2 right-2 p-1 text-red-500 hover:text-red-700"*/}
-      {/*  onClick={() => handleReport(service)}*/}
-      {/*>*/}
-      {/*  <Flag className="w-5 h-5" />*/}
-      {/*</Button>*/}
-      <ReportModal/>
+      <ReportModal onSubmit={async () => {
+        await handleReportSubmission(service.id);
+      }} />
 
       <div className="flex gap-4 items-center">
         <div className="p-3 bg-emergency/10 rounded-full">
@@ -186,15 +201,10 @@ const NearestServicesPage = () => {
 
   const renderServiceCard = (service: Service) => (
     <Card key={service.id} className="p-4 mb-4 relative flex flex-col">
-      {/* 🔹 Report Button - Positioned on top-right, does not overlap name */}
-      {/*<Button*/}
-      {/*  variant="ghost"*/}
-      {/*  className="absolute top-2 right-2 p-1 text-red-500 hover:text-red-700"*/}
-      {/*  onClick={() => handleReport(service)}*/}
-      {/*>*/}
-      {/*  <Flag className="w-5 h-5" />*/}
-      {/*</Button>*/}
-      <ReportModal/>
+      <ReportModal onSubmit={async () => {
+        console.log("Pressed Submit Report")
+         await handleReportSubmission(service.id);
+      }}  />
 
       <div className="flex gap-4 items-center">
         <div className="p-3 bg-emergency/10 rounded-full">

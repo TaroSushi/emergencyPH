@@ -1,3 +1,4 @@
+'use client'
 import { Button } from "@/components/ui/button"
 import {
     Dialog,
@@ -9,10 +10,22 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import {Flag} from "lucide-react";
+import { useState } from "react";
 
-export function ReportModal() {
+type ReportModalProps = {
+    onSubmit: () => void
+}
+
+export function ReportModal({onSubmit}: ReportModalProps) {
+    const [open, setOpen] = useState(false);
+
+    const handleSubmit = async () => {
+        await onSubmit();
+        setOpen(false);
+    };
+
     return (
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button
                     variant="ghost"
@@ -29,7 +42,7 @@ export function ReportModal() {
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-                    <Button type="submit">Submit Report</Button>
+                    <Button onClick={handleSubmit}>Submit Report</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
