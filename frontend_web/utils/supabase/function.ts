@@ -10,6 +10,7 @@ export interface Service {
     contact_no?: string;
     lat: number;
     lon: number;
+    verified?: boolean;
   }
 export const handleReport = (service: Service) => {
 

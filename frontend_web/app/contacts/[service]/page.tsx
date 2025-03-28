@@ -2,8 +2,9 @@
 
 import { useParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
-import { Phone, Hospital, Shield, Flame, Scale, User, Flag, ChevronDown } from "lucide-react";
+import { Phone, Hospital, Shield, Flame, Scale, User, Flag, ChevronDown, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from '@/utils/supabase/client';
@@ -112,11 +113,20 @@ const NearestServicesPage = () => {
             userLocation.longitude, 
             service.lat ?? 0, 
             service.lon ?? 0
-          )
+          ),
+          // Add verification status - first 2 and next 6 are unverified
+          verified: false // Default all to unverified initially
         })).sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+        
+        // Set verification status after sorting
+        // First 2 and next 6 will remain unverified, the rest will be verified
+        const withVerification = sorted.map((service, index) => ({
+          ...service,
+          verified: !(index < 2 || (index >= 2 && index < 8))
+        }));
   
-        sessionStorage.setItem(sessionKey, JSON.stringify(sorted));
-        setServices([...sorted]); 
+        sessionStorage.setItem(sessionKey, JSON.stringify(withVerification));
+        setServices([...withVerification]); 
         
       } catch (err) {
         setError(typeof err === 'string' ? err : 'Error fetching services.');
@@ -168,18 +178,28 @@ const NearestServicesPage = () => {
   };
 
   const renderPoliticianCard = (service: Service, faded = false) => (
-    <Card key={service.id} className={`p-4 mb-4 relative flex flex-col overflow-hidden transition-opacity duration-300 ${faded ? "relative after:content-[''] after:absolute after:top-0 after:left-0 after:w-full after:h-1/2 after:bg-gradient-to-b after:from-white after:to-transparent" : ""}`} style={{ height: faded ? '50%' : 'auto', clipPath: faded ? 'inset(0 0 50% 0)' : 'none' }}>
+    <Card key={service.id} className={`p-4 mb-4 relative flex flex-col overflow-hidden transition-opacity duration-300 
+      ${faded ? "relative after:content-[''] after:absolute after:top-0 after:left-0 after:w-full after:h-1/2 after:bg-gradient-to-b after:from-white after:to-transparent" : ""}`} 
+      style={{ height: faded ? '50%' : 'auto', clipPath: faded ? 'inset(0 0 50% 0)' : 'none' }}>
       <ReportModal onSubmit={async () => {
         await handleReportSubmission(service.id);
       }} />
 
       <div className="flex gap-4 items-center">
-        <div className="p-3 bg-emergency/10 rounded-full">
+        <div className="p-3 rounded-full bg-emergency/10">
           {getIcon(service.type)}
         </div>
         <div className="flex-1">
-          <h2 className="text-lg font-semibold pr-8">{service.name}</h2>
-          <p className="text-gray-500">{service.classification || 'No classification'}</p>
+          <h2 className="text-lg font-semibold pr-2">{service.name}</h2>
+          {!service.verified && (
+            <div className="mt-1">
+              <Badge variant="warning" className="flex items-center gap-1 inline-flex">
+                <AlertCircle className="h-3 w-3" />
+                Unverified
+              </Badge>
+            </div>
+          )}
+          <p className="text-gray-500 mt-1">{service.classification || 'No classification'}</p>
         </div>
       </div>
 
@@ -195,6 +215,12 @@ const NearestServicesPage = () => {
           </a>
         </Button>
       )}
+
+      {!service.verified && !faded && (
+        <div className="mt-2 text-xs text-yellow-600 bg-yellow-50 p-2 rounded">
+          <p>This contact hasn't been verified by our team. Please report if incorrect.</p>
+        </div>
+      )}
     </Card>
   );
 
@@ -207,13 +233,21 @@ const NearestServicesPage = () => {
       }}  />
 
       <div className="flex gap-4 items-center">
-        <div className="p-3 bg-emergency/10 rounded-full">
+        <div className="p-3 rounded-full bg-emergency/10">
           {getIcon(service.type)}
         </div>
         <div className="flex-1">
           {/* 🔹 Ensures the name does not overlap with the flag */}
-          <h2 className="text-lg font-semibold pr-8">{service.name}</h2>
-          <p className="text-gray-500">{service.classification || 'No classification'}</p>
+          <h2 className="text-lg font-semibold pr-2">{service.name}</h2>
+          {!service.verified && (
+            <div className="mt-1">
+              <Badge variant="warning" className="flex items-center gap-1 inline-flex">
+                <AlertCircle className="h-3 w-3" />
+                Unverified
+              </Badge>
+            </div>
+          )}
+          <p className="text-gray-500 mt-1">{service.classification || 'No classification'}</p>
           <p className="text-gray-500">
             {service.category || 'No category'}
             {service.type !== 'Politician' && ` • ${service.distance} km away`}
@@ -233,6 +267,12 @@ const NearestServicesPage = () => {
             {service.contact_no}
           </a>
         </Button>
+      )}
+
+      {!service.verified && (
+        <div className="mt-2 text-xs text-gray-500 p-2 rounded">
+          <p>This contact hasn't been verified by our team. Please report if incorrect.</p>
+        </div>
       )}
     </Card>
   );
