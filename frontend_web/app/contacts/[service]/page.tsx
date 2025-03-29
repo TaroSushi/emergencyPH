@@ -117,7 +117,7 @@ const NearestServicesPage = () => {
           
           // 🔹 Also fetch from unverified_service table for City
           const { data: unverifiedCityData, error: unverifiedCityError } = await supabase
-            .from("unverified_service")
+            .from("service")
             .select('*')
             .eq('type', type)
             .eq("category", "City Government")
@@ -392,12 +392,6 @@ const NearestServicesPage = () => {
         </Button>
       )}
 
-      {!service.verified && !faded && (
-        <div className="mt-2 text-xs text-yellow-600 bg-yellow-50 p-2 rounded">
-          <p>This contact hasn&apos;t been verified by our team. Please report if incorrect.</p>
-        </div>
-      )}
-
       {!faded && renderSpecialThanks(service)}
     </Card>
   );
@@ -405,11 +399,6 @@ const NearestServicesPage = () => {
 
   const renderServiceCard = (service: Service) => (
     <Card key={getServiceId(service)} className="p-4 mb-4 relative flex flex-col">
-      <ReportModal onSubmit={async () => {
-        console.log("Pressed Submit Report")
-        const serviceId = getServiceId(service);
-        await handleReportSubmission(typeof serviceId === 'number' ? serviceId : undefined);
-      }}  />
 
       <div className="flex gap-4 items-center">
         <div className="p-3 rounded-full bg-emergency/10">
@@ -426,7 +415,6 @@ const NearestServicesPage = () => {
               </Badge>
             </div>
           )}
-          <p className="text-gray-500 mt-1">{service.classification || 'No classification'}</p>
           <p className="text-gray-500">
             {service.category || 'No category'}
             {service.type !== 'Politician' && ` • ${service.distance} km away`}
@@ -447,14 +435,6 @@ const NearestServicesPage = () => {
           </a>
         </Button>
       )}
-
-      {!service.verified && (
-        <div className="mt-2 text-xs text-gray-500 p-2 rounded">
-          <p>This contact hasn&apos;t been verified by our team. Please report if incorrect.</p>
-        </div>
-      )}
-
-      {renderSpecialThanks(service)}
     </Card>
   );
 

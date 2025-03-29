@@ -112,8 +112,8 @@ const Index = () => {
   const services = [
     { id: 1, text: "Medical", link: "/contacts/Medical", icon: <Hospital className="h-10 w-10 text-white" />, color: "#FF6B6B" },
     { id: 2, text: "Police", link: "/contacts/Police", icon: <Shield className="h-10 w-10 text-white" />, color: "#4D96FF" },
-    { id: 3, text: "Fire", link: "/contacts/Firehouse", icon: <Flame className="h-10 w-10 text-white" />, color: "#FF9F45" },
-    { id: 4, text: "Rescue", link: "/contacts/Rescue", icon: <PhoneCall className="h-10 w-10 text-white" />, color: "#6BCB77" },
+    { id: 3, text: "Fire", link: "/contacts/FireStation", icon: <Flame className="h-10 w-10 text-white" />, color: "#FF9F45" },
+    { id: 4, text: "Government", link: "/contacts/Politician", icon: <PhoneCall className="h-10 w-10 text-white" />, color: "#6BCB77" },
   ];
 
   // Mock data for recent alerts

@@ -96,7 +96,6 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
         <AuthProvider>
           <div className="flex flex-col-reverse md:flex-col md:m-4 md:rounded-full justify-between min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-            <Navbar />
             <main className="px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
               {children}
             </main>
