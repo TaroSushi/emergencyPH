@@ -1,13 +1,12 @@
 "use client";
 
-import { JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Phone, Hospital, PlusSquare, Car, Shield, Flame, Scale, User, Flag } from "lucide-react";
+import { Phone, Hospital, Shield, Flame, Scale, User, Flag } from "lucide-react";
 import { Combobox } from "@/components/custom/combobox";
 import { handleSubmit } from "@/actions/contact-search";
-import { useEffect } from "react";
 import { supabase } from '@/utils/supabase/client';
 import { handleReport, Service} from '@/utils/supabase/function';
 
@@ -33,17 +32,17 @@ const getDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number) =
 };
 
 const Emergency = () => {
-    const [results, setResults] = useState<any>(null);
+    const [results, setResults] = useState<Service[] | null>(null);
     const [loading, setLoading] = useState(false);
-    const [regions, setRegions] = useState([]);
-    const [categories, setCategories] = useState([]);
+    const [regions, setRegions] = useState<{value: string; label: string}[]>([]);
+    const [categories, setCategories] = useState<{value: string; label: string}[]>([]);
     const [types, setTypes] = useState<{ value: string; label: string }[]>([]);
-    const [classifications, setClassifications] = useState([]);
+    const [classifications, setClassifications] = useState<{value: string; label: string}[]>([]);
     const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
 
 
-    const getDistance = (lat: any, lon: any) => {
-        if (!userLocation) return '';
+    const getDistance = (lat?: number | null, lon?: number | null) => {
+        if (!userLocation || lat === undefined || lat === null || lon === undefined || lon === null) return '';
         return `${getDistanceKm(userLocation.lat, userLocation.lon, lat, lon)} km away`;
     };
 
@@ -98,12 +97,12 @@ const Emergency = () => {
     }, []);
 
     // Custom form submit handler
-    const onSubmit = async (event: any) => {
+    const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setLoading(true);
 
         // Create FormData object
-        const formData = new FormData(event.target);
+        const formData = new FormData(event.currentTarget);
 
         try {
             const response = await handleSubmit(formData); // Call the action
@@ -159,20 +158,20 @@ const Emergency = () => {
                                     <p className="text-gray-500">
                                     {service.location !== 'None' && ` • ${service.location || 'No region'}`}
                                      
-                                    {service.type !== 'Politician' && ` • ${getDistance(service.lat, service.lon)} km away`}
+                                    {service.type !== 'Politician' && ` • ${getDistance(service.latitude, service.longitude)} km away`}
                                     </p>
                                     <p className="mt-1">{service.description || 'No description'}</p>
                                     
                                     <div className="flex flex-col sm:flex-row justify-between items-center gap-2 mt-2">
-                                    {service.contact_no && (
+                                    {service.contact && (
                                     <Button 
                                         variant="outline" 
                                         asChild     
                                         className="w-full sm:w-auto"
                                     >
-                                        <a href={`tel:${service.contact_no.replace(/\D/g, '')}`}>
+                                        <a href={`tel:${service.contact.replace(/\D/g, '')}`}>
                                         <Phone className="w-4 h-4 mr-2" />
-                                        {service.contact_no}
+                                        {service.contact}
                                         </a>
                                     </Button>
                                     )}

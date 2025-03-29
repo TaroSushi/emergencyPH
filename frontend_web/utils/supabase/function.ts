@@ -1,5 +1,6 @@
 export interface Service {
-    id: number;
+    id?: number;
+    service_id?: number;
     type: string;
     name: string;
     category?: string;
@@ -7,9 +8,16 @@ export interface Service {
     location?: string;
     distance?: string;
     description?: string;
-    contact_no?: string;
-    lat: number;
-    lon: number;
+    contact?: string;
+    latitude?: number;
+    longitude?: number;
+    brgy?: string;
+    city?: string;
+    region?: string;
+    province?: string;
+    street?: string;
+    is_verified?: boolean;
+    verified?: boolean;
   }
 export const handleReport = (service: Service) => {
 

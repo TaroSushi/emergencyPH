@@ -3,7 +3,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button"; // Assuming you have a Button component
 
-function Card({ className, onReport, ...props }: React.ComponentProps<"div"> & { onReport?: () => void }) {
+function Card({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card"

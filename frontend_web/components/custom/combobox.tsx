@@ -33,11 +33,6 @@ export const Combobox = ({ placeholder, options, name }: ComboboxProps) => {
   const [open, setOpen] = React.useState(false);
   const [value, setValue] = React.useState("");
 
-  const handleSelect = (selectedValue: string) => {
-    setValue(selectedValue === value ? "" : selectedValue);
-    setOpen(false);
-  };
-
   const selectedLabel = options.find((option) => option.value === value)?.label;
 
   return (

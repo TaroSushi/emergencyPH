@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import * as CommandPrimitive from "cmdk";
 import { Command } from "cmdk";
 
 import { Search as SearchIcon } from "lucide-react"
