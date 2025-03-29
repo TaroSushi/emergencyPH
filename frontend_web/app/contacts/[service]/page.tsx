@@ -64,7 +64,7 @@ const NearestServicesPage = () => {
         const sessionKey = `services-${type}-${userLocation.brgy || userLocation.city || userLocation.region || 'default'}`;
         sessionStorage.removeItem(sessionKey);
 
-        let servicesList: Service[] = [];
+        const servicesList: Service[] = [];
 
         if (type === 'Politician') {
           // 🔹 Fetch Barangay Data First from verified services
@@ -394,7 +394,7 @@ const NearestServicesPage = () => {
 
       {!service.verified && !faded && (
         <div className="mt-2 text-xs text-yellow-600 bg-yellow-50 p-2 rounded">
-          <p>This contact hasn't been verified by our team. Please report if incorrect.</p>
+          <p>This contact hasn&apos;t been verified by our team. Please report if incorrect.</p>
         </div>
       )}
 
@@ -450,7 +450,7 @@ const NearestServicesPage = () => {
 
       {!service.verified && (
         <div className="mt-2 text-xs text-gray-500 p-2 rounded">
-          <p>This contact hasn't been verified by our team. Please report if incorrect.</p>
+          <p>This contact hasn&apos;t been verified by our team. Please report if incorrect.</p>
         </div>
       )}
 

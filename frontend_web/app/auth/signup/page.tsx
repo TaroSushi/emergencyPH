@@ -19,7 +19,6 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { EyeIcon, EyeOffIcon, Camera, Upload } from 'lucide-react';
 import { useAuth } from '@/utils/context/AuthContext';
-import Image from 'next/image';
 
 const signupSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
@@ -70,9 +69,9 @@ export default function SignupPage() {
       toast.success('Account created successfully!');
       router.push('/');
       router.refresh();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Signup error:', error);
-      toast.error(error.message || 'Failed to create account. Please try again.');
+      toast.error(error instanceof Error ? error.message : 'Failed to create account. Please try again.');
     } finally {
       setIsLoading(false);
     }

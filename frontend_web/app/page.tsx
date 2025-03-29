@@ -1,15 +1,11 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   MapPin, 
   Shield, 
   Hospital, 
   Flame, 
-  Scale, 
-  Bell, 
-  Clock, 
   AlertTriangle,
   PhoneCall,
   Plus,
@@ -89,13 +85,13 @@ const Index = () => {
           },
           () => {
             const fallbackLocation = {
-              city: "Location unavailable",
+              city: "Taguig",
               country: "",
-              region: "",
-              brgy: "",
-              longitude: 0,
-              latitude: 0
-            };
+              region: "Metro Manila",
+              brgy: "Fort Bonifacio",
+              longitude: 121.054156,
+              latitude: 14.54952569
+              };
             setLocation(fallbackLocation);
             localStorage.setItem('userLocation', JSON.stringify(fallbackLocation));
           }

@@ -19,7 +19,6 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
 import { useAuth } from '@/utils/context/AuthContext';
-import Image from 'next/image';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
@@ -55,9 +54,9 @@ export default function LoginPage() {
       toast.success('Logged in successfully');
       router.push('/');
       router.refresh();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
-      toast.error(error.message || 'Failed to log in. Please try again.');
+      toast.error(error instanceof Error ? error.message : 'Failed to log in. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -154,7 +153,7 @@ export default function LoginPage() {
 
         <div className="pt-4 text-center">
           <p className="text-gray-600 text-sm">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link href="/auth/signup" className="text-blue-500 hover:underline">
               Sign up
             </Link>

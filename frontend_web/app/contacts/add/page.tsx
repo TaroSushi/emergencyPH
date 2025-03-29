@@ -46,12 +46,6 @@ export default function AddServicePage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Redirect if not authenticated
-  if (!user) {
-    router.push('/auth/login');
-    return null;
-  }
-
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -64,6 +58,12 @@ export default function AddServicePage() {
       notes: '',
     },
   });
+
+  // Redirect if not authenticated
+  if (!user) {
+    router.push('/auth/login');
+    return null;
+  }
 
   async function onSubmit(data: FormValues) {
     setIsLoading(true);
@@ -81,7 +81,7 @@ export default function AddServicePage() {
         address: data.address || null,
         notes: data.notes || null,
         is_verified: false, // New submissions are unverified by default
-        user_id: user.id,
+        user_id: user?.id || null,
         latitude: userLocation?.latitude || null,
         longitude: userLocation?.longitude || null,
         city: userLocation?.city || null,
@@ -101,21 +101,22 @@ export default function AddServicePage() {
       // Record the submission in history
       if (newService && newService.length > 0) {
         const serviceId = newService[0].service_id;
-        
-        await supabase.from('history').insert({
-          service_id: serviceId,
-          user_id: user.id,
-          change_type: 'created',
-          date_modified: new Date().toISOString(),
-        });
-      }
+        if (user) {
+          await supabase.from('history').insert({
+            service_id: serviceId,
+            user_id: user?.id,
+            change_type: 'created',
+            date_modified: new Date().toISOString(),
+          });
+        }
 
-      toast.success('Emergency contact added successfully!');
-      form.reset();
-      router.push('/');
-    } catch (error: any) {
+        toast.success('Emergency contact added successfully!');
+        form.reset();
+        router.push('/');
+      }
+    } catch (error: unknown) {
       console.error('Error adding service:', error);
-      toast.error(error.message || 'Failed to add emergency contact. Please try again.');
+      toast.error(error instanceof Error ? error.message : 'Failed to add emergency contact. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -290,7 +291,7 @@ export default function AddServicePage() {
                     />
                   </FormControl>
                   <FormDescription>
-                    Additional classification information (e.g., "24/7", "Public", "Private")
+                    Additional classification information (e.g., &quot;24/7&quot;, &quot;Public&quot;, &quot;Private&quot;)
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
