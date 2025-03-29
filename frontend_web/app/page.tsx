@@ -17,6 +17,8 @@ import {
   RefreshCw
 } from 'lucide-react';
 import Link from "next/link";
+import { useAuth } from "@/utils/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface UserLocation {
   city: string;
@@ -40,6 +42,8 @@ interface Alert {
 }
 
 const Index = () => {
+  const { user } = useAuth();
+  const router = useRouter();
   const [location, setLocation] = useState<UserLocation>({
     city: "Fetching...",
     country: "",
@@ -49,7 +53,6 @@ const Index = () => {
     latitude: 0,
   });
   const [isUpdateLocation, setIsUpdateLocation] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const fetchUserLocation = async (latitude: number, longitude: number) => {
     try {
@@ -177,9 +180,7 @@ const Index = () => {
   };
 
   const showAuthDialog = () => {
-    alert("You need to log in to access this feature");
-    // You would handle authentication here
-    setIsAuthenticated(true); // For demo purposes
+    router.push('/auth/login');
   };
 
   return (
@@ -190,7 +191,7 @@ const Index = () => {
           Emergency<span className="text-blue-500">PH</span>
         </h1>
         <button 
-          onClick={() => isAuthenticated ? alert("Profile would open here") : showAuthDialog()}
+          onClick={() => user ? router.push('/profile') : showAuthDialog()}
           className="p-2 rounded-full hover:bg-gray-100"
         >
           <User className="h-6 w-6 text-blue-500" />
@@ -243,51 +244,38 @@ const Index = () => {
 
       {/* Recent Alerts Section */}
       <section>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Recent Alerts</h2>
-          <Link href="#" className="text-blue-500 text-sm hover:underline">View All</Link>
-        </div>
-        
-        <div className="bg-gray-50 border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-          {/* Scroll indicator */}
-          <div className="flex justify-center pt-2">
-            <div className="w-10 h-1 bg-gray-300 rounded-full"></div>
-          </div>
-          
-          <div className="divide-y divide-gray-100">
-            {recentAlerts.length > 0 ? (
-              recentAlerts.map(alert => (
-                <div key={alert.id} className="p-4 bg-white m-2 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg" style={{ backgroundColor: `${alert.type.color}20` }}>
-                      {getAlertIcon(alert.type.name)}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{alert.title}</h3>
-                      <p className="text-sm text-gray-600 line-clamp-2 mb-2">{alert.description}</p>
-                      <div className="flex items-center text-xs text-gray-500 gap-2">
-                        <Clock className="h-3 w-3" />
-                        <span>{formatTimestamp(alert.timestamp)}</span>
-                        <MapPin className="h-3 w-3 ml-2" />
-                        <span className="truncate">{alert.location}</span>
-                      </div>
-                    </div>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Alerts</h2>
+        <div className="space-y-3">
+          {recentAlerts.map(alert => (
+            <div 
+              key={alert.id}
+              className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+            >
+              <div className="flex items-start gap-3">
+                <div className="mt-1">{getAlertIcon(alert.type.name)}</div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-lg font-semibold">{alert.title}</h3>
+                    <span className="text-xs text-gray-500">{formatTimestamp(alert.timestamp)}</span>
+                  </div>
+                  <p className="text-gray-600 text-sm mt-1">{alert.description}</p>
+                  <div className="flex items-center mt-2">
+                    <MapPin className="h-3 w-3 text-gray-400 mr-1" />
+                    <span className="text-xs text-gray-500">{alert.location}</span>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="p-8 text-center text-gray-500">
-                No recent alerts
               </div>
-            )}
-          </div>
-          
-          {/* Scroll footer indicator */}
-          <div className="bg-gray-100 p-2 text-xs text-gray-500 flex items-center justify-center gap-1">
-            <span>Scroll for more alerts</span>
-            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-            </svg>
+            </div>
+          ))}
+
+          {/* See More Link */}
+          <div className="text-center">
+            <a href="#" className="text-blue-500 text-sm hover:underline inline-flex items-center gap-1">
+              See more alerts
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="mt-0.5">
+                <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </a>
           </div>
         </div>
       </section>
@@ -296,7 +284,7 @@ const Index = () => {
       <section>
         <Button 
           className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-4 rounded-xl shadow-md transition-colors"
-          onClick={() => isAuthenticated ? alert("Report Alert form would open") : showAuthDialog()}
+          onClick={() => user ? alert("Report Alert form would open") : showAuthDialog()}
         >
           Report Alert
         </Button>
@@ -311,7 +299,7 @@ const Index = () => {
           </p>
           <Button 
             className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md transition-colors"
-            onClick={() => isAuthenticated ? alert("Add Number form would open") : showAuthDialog()}
+            onClick={() => user ? router.push('/contacts/add') : showAuthDialog()}
           >
             <Plus className="h-4 w-4 mr-2" /> Add Number
           </Button>
