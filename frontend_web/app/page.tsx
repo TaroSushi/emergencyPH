@@ -120,28 +120,12 @@ const Index = () => {
   const recentAlerts: Alert[] = [
     {
       id: 1,
-      title: "Flash Flood Warning",
-      description: "Areas near Pasig River are experiencing rising water levels due to heavy rain.",
-      location: "Pasig City",
+      title: "AVAILABLE SOON",
+      description: "Check our Facebook Page to be Updated",
+      location: "Next Update : TBA",
       timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 mins ago
       type: { name: "Flood", color: "#4D96FF" }
     },
-    {
-      id: 2,
-      title: "Road Closure",
-      description: "EDSA southbound lane closed due to accident near Kamuning.",
-      location: "Quezon City",
-      timestamp: new Date(Date.now() - 1000 * 60 * 120), // 2 hours ago
-      type: { name: "Traffic", color: "#FF9F45" }
-    },
-    {
-      id: 3,
-      title: "Power Outage",
-      description: "Several areas in Makati experiencing power interruption.",
-      location: "Makati City",
-      timestamp: new Date(Date.now() - 1000 * 60 * 180), // 3 hours ago
-      type: { name: "Utility", color: "#6BCB77" }
-    }
   ];
 
   const formatTimestamp = (timestamp: Date) => {
@@ -184,7 +168,7 @@ const Index = () => {
       {/* Header with Profile Link */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-          Emergency<span className="text-blue-500">PH</span>
+          My<span className="text-blue-500">Bayani</span>
         </h1>
         <button 
           onClick={() => user ? router.push('/profile') : showAuthDialog()}

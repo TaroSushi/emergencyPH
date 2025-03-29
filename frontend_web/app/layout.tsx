@@ -21,8 +21,6 @@ const geistMono = Geist_Mono({
 
 const navigation = [
     { name: 'Home', href: '/', icon: Home },
-    { name: 'Search Contact', href: '/search-contact', icon: Phone },
-    { name: 'Profile', href: '/profile', icon: User }
 ];
 
 function Navbar() {
